@@ -12,7 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const corsOptions = {
-  origin: ["http://localhost:3000","https://automation-trivandrum-frontend.vercel.app/"],
+  origin: ["http://localhost:3000","https://automation-trivandrum-frontend.vercel.app"],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   optionsSuccessStatus: 204,
@@ -54,8 +54,6 @@ app.post("/api/request-otp", async (req, res) => {
     otpStore.set(phone, { otp, expires: Date.now() + 300000 });
 
     let formattedNumber = await formatPhoneNumber(phone.trim());
-
-    console.log(formattedNumber);
 
     client.messages
       .create({
