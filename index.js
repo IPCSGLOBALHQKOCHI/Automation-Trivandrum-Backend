@@ -111,7 +111,7 @@ app.post("/api/verify-otp", (req, res) => {
 
     const mailOptions = {
       from: "ipcsglobalindia@gmail.com",
-      to: ["ipcsdeveloper@gmail.com"],
+      to: [ "dmmanager.ipcs@gmail.com","seema@ipcsglobal.com"],
       subject: "New Lead Form Submission on ",
       html: emailHtml,
     };
