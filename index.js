@@ -90,6 +90,7 @@ app.post("/api/verify-otp", (req, res) => {
     form,
     formname,
     nearestLocation,
+    receivingMail,
   } = req.body;
 
   const record = otpStore.get(phone);
@@ -134,7 +135,7 @@ app.post("/api/verify-otp", (req, res) => {
 
     const mailOptions = {
       from: "ipcsglobalindia@gmail.com",
-      to: [ "dmmanager.ipcs@gmail.com","seema@ipcsglobal.com"],
+      to: [ "dmmanager.ipcs@gmail.com",receivingMail],
       // to: ["ipcsdeveloper@gmail.com"],
       subject: "New Lead Form Submission on ",
       html: emailHtml,
@@ -202,6 +203,7 @@ app.post("/api/send-email2", (req, res) => {
     form,
     formname,
     nearestLocation,
+    receivingMail,
   } = req.body;
 
   const nearestLocationText = nearestLocation
@@ -241,7 +243,7 @@ app.post("/api/send-email2", (req, res) => {
 
   const mailOptions = {
     from: "ipcsglobalindia@gmail.com",
-    to: ["dmmanager.ipcs@gmail.com", "seema@ipcsglobal.com"],
+    to: ["dmmanager.ipcs@gmail.com", receivingMail],
     // to: ["ipcsdeveloper@gmail.com"],
     subject: "New Lead Form Submission on ",
     html: emailHtml,
