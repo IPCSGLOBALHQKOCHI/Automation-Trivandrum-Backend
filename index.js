@@ -12,7 +12,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const corsOptions = {
-  origin: ["http://localhost:3000","https://automation-trivandrum-frontend.vercel.app","http://campaign.ipcsglobal.com","https://campaign.ipcsglobal.com"],
+  origin: [
+    "http://localhost:3000",
+    "https://automation-trivandrum-frontend.vercel.app",
+    "http://campaign.ipcsglobal.com",
+    "https://campaign.ipcsglobal.com",
+  ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   optionsSuccessStatus: 204,
@@ -75,12 +80,26 @@ app.post("/api/request-otp", async (req, res) => {
 });
 
 app.post("/api/verify-otp", (req, res) => {
-  const { otp, phone, name, email, qualification, location, form } = req.body;
+  const {
+    otp,
+    phone,
+    name,
+    email,
+    qualification,
+    location,
+    form,
+    formname,
+    nearestLocation,
+  } = req.body;
 
   const record = otpStore.get(phone);
 
   if (record && record.otp === otp && record.expires > Date.now()) {
     otpStore.delete(phone);
+
+    const nearestLocationText = nearestLocation
+      ? `Nearest Location: ${nearestLocation}<br>`
+      : "";
 
     let emailHtml;
     if (form === "Register") {
@@ -89,15 +108,19 @@ app.post("/api/verify-otp", (req, res) => {
         .replace("{{email}}", email)
         .replace("{{phone}}", phone)
         .replace("{{qualification}}", qualification)
-        .replace("{{location}}", location);
+        .replace("{{formname}}", formname)
+        .replace("{{location}}", location)
+        .replace("{{nearestLocation}}", nearestLocationText);
     } else if (form === "Offer") {
       emailHtml = emailTemplate2
         .replace("{{name}}", name)
+        .replace("{{formname}}", formname)
         .replace("{{phone}}", phone);
     } else if (form === "Brochure") {
       emailHtml = emailTemplate3
         .replace("{{name}}", name)
         .replace("{{email}}", email)
+        .replace("{{formname}}", formname)
         .replace("{{phone}}", phone);
     }
 
@@ -111,7 +134,8 @@ app.post("/api/verify-otp", (req, res) => {
 
     const mailOptions = {
       from: "ipcsglobalindia@gmail.com",
-      to: [ "dmmanager.ipcs@gmail.com","seema@ipcsglobal.com"],
+      // to: [ "dmmanager.ipcs@gmail.com","seema@ipcsglobal.com"],
+      to: ["ipcsdeveloper@gmail.com"],
       subject: "New Lead Form Submission on ",
       html: emailHtml,
     };
@@ -169,7 +193,20 @@ app.post("/api/resend-otp", async (req, res) => {
 });
 
 app.post("/api/send-email2", (req, res) => {
-  const { name, email, phone, qualification, location, form } = req.body;
+  const {
+    name,
+    email,
+    phone,
+    qualification,
+    location,
+    form,
+    formname,
+    nearestLocation,
+  } = req.body;
+
+  const nearestLocationText = nearestLocation
+    ? `Nearest Location: ${nearestLocation}<br>`
+    : "";
 
   let emailHtml;
   if (form === "Register") {
@@ -178,15 +215,19 @@ app.post("/api/send-email2", (req, res) => {
       .replace("{{email}}", email)
       .replace("{{phone}}", phone)
       .replace("{{qualification}}", qualification)
-      .replace("{{location}}", location);
+      .replace("{{formname}}", formname)
+      .replace("{{location}}", location)
+      .replace("{{nearestLocation}}", nearestLocationText);
   } else if (form === "Offer") {
     emailHtml = emailTemplate2
       .replace("{{name}}", name)
+      .replace("{{formname}}", formname)
       .replace("{{phone}}", phone);
   } else if (form === "Brochure") {
     emailHtml = emailTemplate3
       .replace("{{name}}", name)
       .replace("{{email}}", email)
+      .replace("{{formname}}", formname)
       .replace("{{phone}}", phone);
   }
 
@@ -200,7 +241,8 @@ app.post("/api/send-email2", (req, res) => {
 
   const mailOptions = {
     from: "ipcsglobalindia@gmail.com",
-    to: [ "dmmanager.ipcs@gmail.com","seema@ipcsglobal.com"],
+    // to: ["dmmanager.ipcs@gmail.com", "seema@ipcsglobal.com"],
+    to: ["ipcsdeveloper@gmail.com"],
     subject: "New Lead Form Submission on ",
     html: emailHtml,
   };

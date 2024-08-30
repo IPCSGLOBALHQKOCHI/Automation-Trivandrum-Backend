@@ -41,13 +41,14 @@ const emailTemplate1 = `
 <body>
   <div class="container">
     <div class="header">
-      <h1>INDUSTRIAL AUTOMATION REGISTER FORM</h1>
+      <h1>{{formname}}</h1>
     </div>
     <div class="content">
       <p><strong>Name:</strong> {{name}}</p>
       <p><strong>Email:</strong> {{email}}</p>
       <p><strong>Phone:</strong> {{phone}}</p>
       <p><strong>Qualification:</strong> {{qualification}}</p>
+      <p><strong>{{nearestLocation}}</strong></p>
     </div>
     <div class="footer">
       <p>&copy; 2024 IPCS GLOBAL. All rights reserved.</p>
@@ -100,7 +101,7 @@ const emailTemplate2 = `
 <body>
   <div class="container">
     <div class="header">
-      <h1>INDUSTRIAL AUTOMATION OFFER FORM</h1>
+      <h1>{{formname}}</h1>
     </div>
     <div class="content">
       <p><strong>Name:</strong> {{name}}</p>
@@ -157,7 +158,7 @@ const emailTemplate3 = `
 <body>
   <div class="container">
     <div class="header">
-      <h1>INDUSTRIAL AUTOMATION DOWNLOAD BROCHURE FORM</h1>
+      <h1>{{formname}}</h1>
     </div>
     <div class="content">
       <p><strong>Name:</strong> {{name}}</p>
