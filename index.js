@@ -111,7 +111,6 @@ app.post("/api/request-otp", async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
       });
 
-    res.status(200).json({ message: otp });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
