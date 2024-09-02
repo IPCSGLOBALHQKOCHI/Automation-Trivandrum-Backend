@@ -2,11 +2,8 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const {
-  emailTemplate1,
-  emailTemplate2,
-  emailTemplate3,
-} = require("./util/template");
+const { google } = require("googleapis");
+const { EmailTemplate } = require("./util/template");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -50,6 +47,45 @@ function formatPhoneNumber(phoneNumber) {
   return `+${country} ${part1} ${part2}`;
 }
 
+const auth = new google.auth.GoogleAuth({
+  keyFile: "./util/google.json",
+  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+});
+
+async function writeToSheet(values, form) {
+  const sheets = google.sheets({ version: "v4", auth }); // Creates a Sheets API client instance.
+  const spreadsheetId = "1dVt21D2FLrppFzKaaJDldv_8DeqRv_ovJfia8T3WUeE"; // The ID of the spreadsheet.
+
+  try {
+    // Get the current range of the sheet to determine the last filled row.
+    const getRange = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${form}!A:A`, // Adjust this range based on the column where your data starts.
+    });
+
+    // Determine the next empty row.
+    const numRows = getRange.data.values ? getRange.data.values.length : 0;
+    const nextRow = numRows + 1;
+
+    // Adjust the range to point to the next empty row.
+    const range = `${form}!A${nextRow}`; // Starts writing at the next available row.
+    const valueInputOption = "USER_ENTERED"; // How input data should be interpreted.
+
+    const resource = { values }; // The data to be written.
+
+    const res = await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range,
+      valueInputOption,
+      resource,
+    });
+
+    return res; // Returns the response from the Sheets API.
+  } catch (error) {
+    console.error("error", error); // Logs errors.
+  }
+}
+
 app.post("/api/request-otp", async (req, res) => {
   try {
     const { phone } = req.body;
@@ -74,86 +110,89 @@ app.post("/api/request-otp", async (req, res) => {
 
         res.status(500).json({ success: false, message: err.message });
       });
+
+    res.status(200).json({ message: otp });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.post("/api/verify-otp", (req, res) => {
-  const {
-    otp,
-    phone,
-    name,
-    email,
-    qualification,
-    location,
-    form,
-    formname,
-    nearestLocation,
-    receivingMail,
-  } = req.body;
+app.post("/api/verify-otp", async (req, res) => {
+  try {
+    const {
+      otp,
+      phone,
+      name,
+      email,
+      qualification,
+      location,
+      form,
+      formname,
+      nearestLocation,
+      receivingMail,
+    } = req.body;
 
-  const record = otpStore.get(phone);
+    const record = otpStore.get(phone);
 
-  if (record && record.otp === otp && record.expires > Date.now()) {
-    otpStore.delete(phone);
+    if (record && record.otp === otp && record.expires > Date.now()) {
+      otpStore.delete(phone);
 
-    const nearestLocationText = nearestLocation
-      ? `Nearest Location: ${nearestLocation}<br>`
-      : "";
+      const nearestLocationText = nearestLocation
+        ? `Nearest Location: ${nearestLocation}<br>`
+        : "";
 
-    let emailHtml;
-    if (form === "Register") {
-      emailHtml = emailTemplate1
-        .replace("{{name}}", name)
-        .replace("{{email}}", email)
-        .replace("{{phone}}", phone)
-        .replace("{{qualification}}", qualification)
-        .replace("{{formname}}", formname)
-        .replace("{{location}}", location)
-        .replace("{{nearestLocation}}", nearestLocationText);
-    } else if (form === "Offer") {
-      emailHtml = emailTemplate2
-        .replace("{{name}}", name)
-        .replace("{{formname}}", formname)
-        .replace("{{phone}}", phone);
-    } else if (form === "Brochure") {
-      emailHtml = emailTemplate3
-        .replace("{{name}}", name)
-        .replace("{{email}}", email)
-        .replace("{{formname}}", formname)
-        .replace("{{phone}}", phone);
+      const emailSection =
+        form !== "Offer" && form !== "Whatsapp" && form !== "Phone"
+          ? `<p><strong>Email:</strong> ${email}</p>`
+          : "";
+      const qualificationSection =
+        form === "Register"
+          ? `<p><strong>Qualification:</strong> ${qualification}</p>`
+          : "";
+
+      let emailHtml = EmailTemplate.replace("{{formname}}", formname || "")
+        .replace("{{name}}", name || "")
+        .replace("{{phone}}", phone || "")
+        .replace("{{emailSection}}", emailSection)
+        .replace("{{qualificationSection}}", qualificationSection)
+        .replace("{{nearestLocationSection}}", nearestLocationText);
+
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: "ipcsglobalindia@gmail.com",
+          pass: "nnpd xhea roak mbbk",
+        },
+      });
+
+      const mailOptions = {
+        from: "ipcsglobalindia@gmail.com",
+        to: ["dmmanager.ipcs@gmail.com", receivingMail],
+        // to: ["ipcsdeveloper@gmail.com"],
+        subject: "New Lead Form Submission on ",
+        html: emailHtml,
+      };
+
+      transporter.sendMail(mailOptions, async (error, info) => {
+        if (error) {
+          console.error("Error sending email:", error);
+          res.status(500).send("Error sending email");
+        } else {
+          const date = new Date().toLocaleString();
+
+          await writeToSheet([[name, phone, email, qualification, date]], form);
+
+          res.status(200).json({ message: "Form submitted successfully.." });
+        }
+      });
+    } else {
+      res
+        .status(400)
+        .json({ success: false, message: "Invalid OTP or OTP expired!" });
     }
-
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: "ipcsglobalindia@gmail.com",
-        pass: "nnpd xhea roak mbbk",
-      },
-    });
-
-    const mailOptions = {
-      from: "ipcsglobalindia@gmail.com",
-      to: [ "dmmanager.ipcs@gmail.com",receivingMail],
-      // to: ["ipcsdeveloper@gmail.com"],
-      subject: "New Lead Form Submission on ",
-      html: emailHtml,
-    };
-
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Error sending email:", error);
-        res.status(500).send("Error sending email");
-      } else {
-        console.log("Email sent:", info.response);
-        res.status(200).send("Email sent successfully");
-      }
-    });
-  } else {
-    res
-      .status(400)
-      .json({ success: false, message: "Invalid OTP or OTP expired!" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error." });
   }
 });
 
@@ -206,32 +245,28 @@ app.post("/api/send-email2", (req, res) => {
     receivingMail,
   } = req.body;
 
-  const nearestLocationText = nearestLocation
-    ? `Nearest Location: ${nearestLocation}<br>`
-    : "";
+  const emailSection =
+    form !== "Offer" && form !== "Whatsapp" && form !== "Phone"
+      ? `<p><strong>Email:</strong> ${email}</p>`
+      : "";
+  const qualificationSection =
+    form === "Register"
+      ? `<p><strong>Qualification:</strong> ${qualification}</p>`
+      : "";
+  const locationSection =
+    form === "Register" ? `<p><strong>Location:</strong> ${location}</p>` : "";
+  const nearestLocationSection =
+    form === "Register"
+      ? `<p><strong>Nearest Location:</strong> ${nearestLocation}</p>`
+      : "";
 
-  let emailHtml;
-  if (form === "Register") {
-    emailHtml = emailTemplate1
-      .replace("{{name}}", name)
-      .replace("{{email}}", email)
-      .replace("{{phone}}", phone)
-      .replace("{{qualification}}", qualification)
-      .replace("{{formname}}", formname)
-      .replace("{{location}}", location)
-      .replace("{{nearestLocation}}", nearestLocationText);
-  } else if (form === "Offer") {
-    emailHtml = emailTemplate2
-      .replace("{{name}}", name)
-      .replace("{{formname}}", formname)
-      .replace("{{phone}}", phone);
-  } else if (form === "Brochure") {
-    emailHtml = emailTemplate3
-      .replace("{{name}}", name)
-      .replace("{{email}}", email)
-      .replace("{{formname}}", formname)
-      .replace("{{phone}}", phone);
-  }
+  let emailHtml = EmailTemplate.replace("{{formname}}", formname || "")
+    .replace("{{name}}", name || "")
+    .replace("{{phone}}", phone || "")
+    .replace("{{emailSection}}", emailSection)
+    .replace("{{qualificationSection}}", qualificationSection)
+    .replace("{{locationSection}}", locationSection)
+    .replace("{{nearestLocationSection}}", nearestLocationSection);
 
   const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -244,18 +279,26 @@ app.post("/api/send-email2", (req, res) => {
   const mailOptions = {
     from: "ipcsglobalindia@gmail.com",
     to: ["dmmanager.ipcs@gmail.com", receivingMail],
-    // to: ["ipcsdeveloper@gmail.com"],
+    // to: ["ipcsdeveloper@gmail.com"],sss
     subject: "New Lead Form Submission on ",
     html: emailHtml,
   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
+  transporter.sendMail(mailOptions, async (error, info) => {
     if (error) {
       console.error("Error sending email:", error);
       res.status(500).send("Error sending email");
     } else {
-      console.log("Email sent:", info.response);
-      res.status(200).send("Email sent successfully");
+      const date = new Date().toLocaleString();
+
+      if (form === "Brochure") {
+        await writeToSheet([[name, phone, email, date]], form);
+      } else if (form === "Offer")
+        await writeToSheet([[name, phone, email, qualification, date]], form);
+      else if (form === "Whatsapp" || form === "Phone")
+        await writeToSheet([[name, phone, date]], form);
+
+      res.status(200).json({ message: "Form submitted successfully.." });
     }
   });
 });
