@@ -47,9 +47,20 @@ function formatPhoneNumber(phoneNumber) {
   return `+${country} ${part1} ${part2}`;
 }
 
+// const auth = new google.auth.GoogleAuth({
+//   keyFile: "./util/google.json",
+//   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+// });
+
+const GOOGLE_CLIENT_EMAIL="lead-612@smtp-global-site.iam.gserviceaccount.com"
+const GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDyad6o8NsHTKWL\nm5zycu1uPCt85eC4iSNRhWXbm2Fx28fc+PuH1DqTK2PqgeDKPZBrT8k4KsHVee4+\n3oONhMI6Ik9Pec1HFGczgETTdcqWdFLinYV1KofhNnC7oJmubf6FS1AlFyAVegjC\ndbefj5JiDJY7pwz6ySb/THr/+2n2O5WE7VP8LKrDpN24L474aYYTINnGBSrICgxS\nzVduZD5HKfqtVZayEkgsvcYcshyXkX50XD8VhQ8IaH0LzcakcmbHmX2F8014c1Mr\nr2SWVwqtq/gJi/QeIAd0twCKlEIVa9Z1dlwPO7xq11QIqs4RBO5EVPGeyfAa9FfU\nXndqHLPzAgMBAAECggEAEd4QzdX25upU113wawRikLn5oJqW/jMJeeRBtjaVL525\n9QUbEQ9pA9jyY+IPzghMoUQ/uhaYs+HpWBPxkVhEMqG9w8dgBImx859UM1vew0ku\npMpkgFbSrhxjoci8Gxm7ZVrAPQOf10Vn6OFhV+7upLB10E7HS6LQ74dVF5IR5Nap\nuYlzvQ5skow1UqqhRNiSNsIj0lRDxp6npOitGnz5lyS4KrdJoYNXDNjoeIzKZMMz\nTnqbVnsj9Rq6Erh9Ys21QXyhAu8Lu9E8/TVwPKhsuD5RVa0gwR7g5U9sp3vkIYPj\nvTygo3ozE3Y7ExZdbnO2Wk+esqe4gIquKUud0WVx8QKBgQD/9tyAaamXuC5QrluN\n9klzxslbUU4iAYu2GZVYYBoahcHKRDDkMkWC45J2z/uiC+d5Je9MNjwFhWxhZTh4\nTaJIHOAM2Ci+W832cRmqavAwsXiOY2B/2SKcd1Rfn6G+2aaiKT1uVSpTa3sFjgWN\ntyvY2Ypy6rBbkVIz4y2lkpke4wKBgQDycoZOJyinx/vKjCz9FnwEctn+avWC/doj\nsBl/AeJeQehD8YGHZaXJzp3l5ETo9gy/7J/+gBP9p2kBr2dg+nYg4eZhn+BpR5Md\nevCXvj8p3lydB5RWjT5kEFCIOejqBnsuWv0ue6xQ+0N5yXRjNLdclx/EFoTWRBeY\nuK5+vhaTsQKBgBmf/Ck66siOnsxi+DV5H5dgok3rENhksTj0zLfBPzvCgkkelIpz\n4fOdls8gOT/a0zyUqKVHlLC0z8ncWU/p7cIsad2/UizkgfUXE4u1EwC886XFmyaR\ndV6Wr7K3B3lUztLTMBw4mHkrfHBs7G9olBIsjSi+CBPSs5kQOESoLX4jAoGAVzlw\nrElWTRabtcE8pkkikQ8o8mlUrq3ZfyFp6tGouTSI9Xi7mxSs0q/tCrpXOGDdMWdW\nIF+/0XAbTSnnzXIOccIT+mdkezvu55pFWLJvUwbW1v/VFFZ4bdOYxYngC+INCx5d\nHA4ObowXOIeLwe1DUqJkIU3guJ2Cx8UZsit9P+ECgYEA8YJ04Jp6CKZkz50XAgAN\nOHEvhjrttVFVvCvEpllu/g3Jr9OMpxxGW6HfczaXrrwDAt+CJPqV/Ye+pyJ4sN/S\niHpChLRh8WVBGNyRCFYcZQQL1h1866WLTGe92L4k/EIbKSZsxuxN11Gh+V2kEO+F\n0zEQWljFW6GRWFLhZcdmlxk=\n-----END PRIVATE KEY-----\n"
+
 const auth = new google.auth.GoogleAuth({
-  keyFile: "./util/google.json",
-  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  credentials: {
+    client_email: GOOGLE_CLIENT_EMAIL,
+    private_key: GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  },
+  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
 async function writeToSheet(values, form) {
