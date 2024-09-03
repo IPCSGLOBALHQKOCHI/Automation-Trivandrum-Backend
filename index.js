@@ -54,14 +54,10 @@ function formatPhoneNumber(phoneNumber) {
 // });
 
 async function writeToSheet(values, form, path) {
-
-
-
   const GOOGLE_CLIENT_EMAIL = location[path].GOOGLE_CLIENT_EMAIL;
   const GOOGLE_PRIVATE_KEY = location[path].GOOGLE_PRIVATE_KEY;
 
-  console.log(path,GOOGLE_CLIENT_EMAIL,GOOGLE_PRIVATE_KEY);
-  
+  console.log(path, GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY);
 
   const auth = new google.auth.GoogleAuth({
     credentials: {
@@ -196,7 +192,11 @@ app.post("/api/verify-otp", async (req, res) => {
         } else {
           const date = new Date().toLocaleString();
 
-          await writeToSheet([[name, phone, email, qualification, date]], form);
+          await writeToSheet(
+            [[name, phone, email, qualification, date]],
+            form,
+            path
+          );
 
           res.status(200).json({ message: "Form submitted successfully.." });
         }
