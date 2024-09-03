@@ -142,6 +142,7 @@ app.post("/api/verify-otp", async (req, res) => {
       formname,
       nearestLocation,
       receivingMail,
+      path
     } = req.body;
 
     const record = otpStore.get(phone);
