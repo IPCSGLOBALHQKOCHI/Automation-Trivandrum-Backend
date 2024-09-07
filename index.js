@@ -110,22 +110,22 @@ app.post("/api/request-otp", async (req, res) => {
 
     let formattedNumber = await formatPhoneNumber(phone.trim());
 
-    // client.messages
-    //   .create({
-    //     body: `Your IPCS Global Verification code is  ${otp}`,
-    //     from: "+12283356266",
-    //     to: formattedNumber,
-    //   })
-    //   .then((message) =>
-    //     res.status(200).json({ success: true, message: "OTP sent!" })
-    //   )
-    //   .catch((err) => {
-    //     console.log(err);
+    client.messages
+      .create({
+        body: `Your IPCS Global Verification code is  ${otp}`,
+        from: "+12283356266",
+        to: formattedNumber,
+      })
+      .then((message) =>
+        res.status(200).json({ success: true, message: "OTP sent!" })
+      )
+      .catch((err) => {
+        console.log(err);
 
-    //     res.status(500).json({ success: false, message: err.message });
-    //   });
-    console.log(otp);
-    res.status(200).json({ success: true, message: "OTP sent!" })
+        res.status(500).json({ success: false, message: err.message });
+      });
+    // console.log(otp);
+    // res.status(200).json({ success: true, message: "OTP sent!" })
     
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
