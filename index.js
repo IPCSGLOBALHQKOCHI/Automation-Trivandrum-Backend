@@ -57,7 +57,6 @@ async function writeToSheet(values, form, path) {
   const GOOGLE_CLIENT_EMAIL = location[path].GOOGLE_CLIENT_EMAIL;
   const GOOGLE_PRIVATE_KEY = location[path].GOOGLE_PRIVATE_KEY;
 
-  console.log(path, GOOGLE_CLIENT_EMAIL, GOOGLE_PRIVATE_KEY);
 
   const auth = new google.auth.GoogleAuth({
     credentials: {
@@ -103,6 +102,7 @@ async function writeToSheet(values, form, path) {
 app.post("/api/request-otp", async (req, res) => {
   try {
     const { phone } = req.body;
+    
 
     const otp = generateOTP();
 
@@ -110,20 +110,23 @@ app.post("/api/request-otp", async (req, res) => {
 
     let formattedNumber = await formatPhoneNumber(phone.trim());
 
-    client.messages
-      .create({
-        body: `Your IPCS Global Verification code is  ${otp}`,
-        from: "+12283356266",
-        to: formattedNumber,
-      })
-      .then((message) =>
-        res.status(200).json({ success: true, message: "OTP sent!" })
-      )
-      .catch((err) => {
-        console.log(err);
+    // client.messages
+    //   .create({
+    //     body: `Your IPCS Global Verification code is  ${otp}`,
+    //     from: "+12283356266",
+    //     to: formattedNumber,
+    //   })
+    //   .then((message) =>
+    //     res.status(200).json({ success: true, message: "OTP sent!" })
+    //   )
+    //   .catch((err) => {
+    //     console.log(err);
 
-        res.status(500).json({ success: false, message: err.message });
-      });
+    //     res.status(500).json({ success: false, message: err.message });
+    //   });
+    console.log(otp);
+    res.status(200).json({ success: true, message: "OTP sent!" })
+    
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -144,6 +147,7 @@ app.post("/api/verify-otp", async (req, res) => {
       receivingMail,
       path
     } = req.body;
+    
 
     const record = otpStore.get(phone);
 
@@ -192,7 +196,8 @@ app.post("/api/verify-otp", async (req, res) => {
           res.status(500).send("Error sending email");
         } else {
           const date = new Date().toLocaleString();
-
+          console.log(name, phone, email, qualification, date);
+          
           await writeToSheet(
             [[name, phone, email, qualification, date]],
             form,
@@ -297,7 +302,7 @@ app.post("/api/send-email2", (req, res) => {
   const mailOptions = {
     from: "ipcsglobalindia@gmail.com",
     to: ["dmmanager.ipcs@gmail.com", receivingMail],
-    // to: ["ipcsdeveloper@gmail.com"],sss
+    // to: ["ipcsdeveloper@gmail.com"],
     subject: "New Lead Form Submission on ",
     html: emailHtml,
   };
