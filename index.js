@@ -196,7 +196,6 @@ app.post("/api/verify-otp", async (req, res) => {
           res.status(500).send("Error sending email");
         } else {
           const date = new Date().toLocaleString();
-          console.log(name, phone, email, qualification, date);
           
           await writeToSheet(
             [[name, phone, email, qualification, date]],
