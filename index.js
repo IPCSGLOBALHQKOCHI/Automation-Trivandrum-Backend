@@ -57,7 +57,6 @@ async function writeToSheet(values, form, path) {
   const GOOGLE_CLIENT_EMAIL = location[path].GOOGLE_CLIENT_EMAIL;
   const GOOGLE_PRIVATE_KEY = location[path].GOOGLE_PRIVATE_KEY;
 
-
   const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: GOOGLE_CLIENT_EMAIL,
@@ -102,7 +101,6 @@ async function writeToSheet(values, form, path) {
 app.post("/api/request-otp", async (req, res) => {
   try {
     const { phone } = req.body;
-    
 
     const otp = generateOTP();
 
@@ -126,7 +124,6 @@ app.post("/api/request-otp", async (req, res) => {
       });
     // console.log(otp);
     // res.status(200).json({ success: true, message: "OTP sent!" })
-    
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -145,9 +142,10 @@ app.post("/api/verify-otp", async (req, res) => {
       formname,
       nearestLocation,
       receivingMail,
-      path
+      path,
     } = req.body;
-    
+
+    const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
 
     const record = otpStore.get(phone);
 
@@ -196,9 +194,9 @@ app.post("/api/verify-otp", async (req, res) => {
           res.status(500).send("Error sending email");
         } else {
           const date = new Date().toLocaleString();
-          
+
           await writeToSheet(
-            [[name, phone, email, qualification, date]],
+            [[name, phone, email, qualification, date, clientIp]],
             form,
             path
           );
@@ -267,6 +265,10 @@ app.post("/api/send-email2", (req, res) => {
     path,
   } = req.body;
 
+  const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+  console.log(clientIp);
+
   const emailSection =
     form !== "Offer" && form !== "Whatsapp" && form !== "Phone"
       ? `<p><strong>Email:</strong> ${email}</p>`
@@ -314,15 +316,15 @@ app.post("/api/send-email2", (req, res) => {
       const date = new Date().toLocaleString();
 
       if (form === "Brochure") {
-        await writeToSheet([[name, phone, email, date]], form, path);
+        await writeToSheet([[name, phone, email, date, clientIp]], form, path);
       } else if (form === "Offer")
         await writeToSheet(
-          [[name, phone, email, qualification, date]],
+          [[name, phone, email, qualification, date, clientIp]],
           form,
           path
         );
       else if (form === "Whatsapp" || form === "Phone")
-        await writeToSheet([[name, phone, date]], form, path);
+        await writeToSheet([[name, phone, date, clientIp]], form, path);
 
       res.status(200).json({ message: "Form submitted successfully.." });
     }
