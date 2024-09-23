@@ -2,6 +2,7 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const axios = require("axios");
 const { google } = require("googleapis");
 const { EmailTemplate } = require("./util/template");
 const { location } = require("./util/location");
@@ -47,11 +48,6 @@ function formatPhoneNumber(phoneNumber) {
 
   return `+${country} ${part1} ${part2}`;
 }
-
-// const auth = new google.auth.GoogleAuth({
-//   keyFile: "./util/google.json",
-//   scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-// });
 
 async function writeToSheet(values, form, path) {
   const GOOGLE_CLIENT_EMAIL = location[path].GOOGLE_CLIENT_EMAIL;
@@ -123,7 +119,7 @@ app.post("/api/request-otp", async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
       });
     // console.log(otp);
-    // res.status(200).json({ success: true, message: "OTP sent!" })
+    // res.status(200).json({ success: true, message: "OTP sent!" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -146,6 +142,12 @@ app.post("/api/verify-otp", async (req, res) => {
     } = req.body;
 
     const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+    const response = await axios.get(`https://ipinfo.io/${clientIp}/json?token=f4b525ba96205a`);
+    // const response = await axios.get(
+    //   `https://ipinfo.io/223.187.2.97/json?token=f4b525ba96205a`
+    // );
+    const ipDetails = response.data;
 
     const record = otpStore.get(phone);
 
@@ -196,7 +198,18 @@ app.post("/api/verify-otp", async (req, res) => {
           const date = new Date().toLocaleString();
 
           await writeToSheet(
-            [[name, phone, email, qualification, date, clientIp]],
+            [
+              [
+                name,
+                phone,
+                email,
+                qualification,
+                date,
+                clientIp,
+                ipDetails?.city,
+                ipDetails?.region,
+              ],
+            ],
             form,
             path
           );
@@ -329,6 +342,154 @@ app.post("/api/send-email2", (req, res) => {
       res.status(200).json({ message: "Form submitted successfully.." });
     }
   });
+});
+
+app.post("/api/v2/send-email", async (req, res) => {
+  const {
+    name,
+    email,
+    phone,
+    otp, // Add OTP field to the request body
+    qualification,
+    location,
+    form,
+    formname,
+    receivingMail,
+    path,
+  } = req.body;
+
+  const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+  const response = await axios.get(`https://ipinfo.io/${clientIp}/json?token=f4b525ba96205a`);
+  // const response = await axios.get(
+  //   `https://ipinfo.io/223.187.2.97/json?token=f4b525ba96205a`
+  // );
+  const ipDetails = response.data;
+
+  // Step 1: Fetch the stored OTP for the phone number from otpStore
+  const record = otpStore.get(phone);
+
+  if (record && record.otp === otp && record.expires > Date.now()) {
+    // OTP is valid
+    otpStore.delete(phone); // Remove the OTP after successful verification
+
+    // Step 2: Construct the email HTML content
+    const emailSection =
+      form !== "Offer" && form !== "Whatsapp" && form !== "Phone"
+        ? `<p><strong>Email:</strong> ${email}</p>`
+        : "";
+    const qualificationSection =
+      form === "Register"
+        ? `<p><strong>Qualification:</strong> ${qualification}</p>`
+        : "";
+    const locationSection =
+      form === "Register"
+        ? `<p><strong>Location:</strong> ${location}</p>`
+        : "";
+
+    let emailHtml = EmailTemplate.replace("{{formname}}", formname || "")
+      .replace("{{name}}", name || "")
+      .replace("{{phone}}", phone || "")
+      .replace("{{emailSection}}", emailSection)
+      .replace("{{qualificationSection}}", qualificationSection)
+      .replace("{{locationSection}}", locationSection);
+
+    // Step 3: Setup email transport and send email
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: "ipcsglobalindia@gmail.com",
+        pass: "nnpd xhea roak mbbk",
+      },
+    });
+
+    const mailOptions = {
+      from: "ipcsglobalindia@gmail.com",
+      to: [
+        "dmmanager.ipcs@gmail.com",
+        receivingMail,
+      ],
+      subject: "New Lead Form Submission on ",
+      html: emailHtml,
+    };
+
+    transporter.sendMail(mailOptions, async (error, info) => {
+      if (error) {
+        console.error("Error sending email:", error);
+        res.status(500).send("Error sending email");
+      } else {
+        const date = new Date().toLocaleString("en-IN", {
+          timeZone: "Asia/Kolkata",
+        });
+
+        // Step 4: Write data to sheet based on the form type
+        if (form === "Brochure") {
+          await writeToSheet(
+            [
+              [
+                name,
+                phone,
+                email,
+                date,
+                clientIp,
+                ipDetails?.city,
+                ipDetails?.region,
+              ],
+            ],
+            form,
+            path
+          );
+        } else if (form === "Offer") {
+          await writeToSheet(
+            [
+              [
+                name,
+                phone,
+                email,
+                qualification,
+                date,
+                clientIp,
+                ipDetails?.city,
+                ipDetails?.region,
+              ],
+            ],
+            form,
+            path
+          );
+        } else if (form === "Whatsapp" || form === "Phone") {
+          await writeToSheet(
+            [[name, phone, date, clientIp, ipDetails?.city, ipDetails?.region]],
+            form,
+            path
+          );
+        } else if (form === "Register") {
+          await writeToSheet(
+            [
+              [
+                name,
+                phone,
+                email,
+                qualification,
+                date,
+                clientIp,
+                ipDetails?.city,
+                ipDetails?.region,
+              ],
+            ],
+            form,
+            path
+          );
+        }
+
+        res.status(200).json({ message: "Form submitted successfully.." });
+      }
+    });
+  } else {
+    // Invalid OTP or OTP expired
+    res
+      .status(400)
+      .json({ success: false, message: "Invalid OTP or OTP expired!" });
+  }
 });
 
 app.get("/", (req, res) => {

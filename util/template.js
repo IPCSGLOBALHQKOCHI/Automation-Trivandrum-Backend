@@ -48,7 +48,6 @@ const EmailTemplate = `
       {{emailSection}}
       <p><strong>Phone:</strong> {{phone}}</p>
       {{qualificationSection}}
-      {{nearestLocationSection}}
     </div>
     <div class="footer">
       <p>&copy; 2024 IPCS GLOBAL. All rights reserved.</p>
