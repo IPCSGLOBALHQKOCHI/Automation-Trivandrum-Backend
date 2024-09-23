@@ -445,8 +445,6 @@ app.post("/api/v2/send-email", async (req, res) => {
               [
                 name,
                 phone,
-                email,
-                qualification,
                 date,
                 clientIp,
                 ipDetails?.city,
