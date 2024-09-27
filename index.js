@@ -16,6 +16,7 @@ const corsOptions = {
     "https://automation-trivandrum-frontend.vercel.app",
     "http://campaign.ipcsglobal.com",
     "https://campaign.ipcsglobal.com",
+    "http://192.168.1.4:3000/",
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
